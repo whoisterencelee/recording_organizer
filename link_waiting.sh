@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# checks when files in spool is complete
-# this also runs in post script and cron
+# returns the oldest link for processing
 
 # require
 LS="ls -tAr"
@@ -9,6 +8,7 @@ LSOF="lsof"
 READLINK="readlink"
 FIND="find . -type l"
 
+cd $1
 for LINK in `$LS \`$FIND\``; do
 
 	# check the file exists and not recording or comskipping

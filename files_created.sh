@@ -9,4 +9,4 @@ LS="ls -tAr"
 SED="sed"
 TOUCH="touch"
 
-{ $LS; $TOUCH .last_check; } | $SED '1,/.last_check/d'
+{ $LS $1; $TOUCH $1/.last_check; } | $SED '1,/.last_check/d'
