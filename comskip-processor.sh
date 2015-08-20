@@ -11,12 +11,16 @@ GREP="grep -c"
 SRC=`dirname $0`
 SCRIPTS=$SRC/utils
 READLINK="readlink"
+FIND="find"
 
 # check how many comskips are running
 RUNNING=`$PS_CMD | $GREP "$PROGRAM"`
 if [ $RUNNING -gt $CORES ]; then echo "too many $COMSKIP_CMD running"; exit 1; fi
 
 # get the next recording to process
+# look for link so no more directories/files
+{ $FIND $ORGANIZER_DIR -type l; }
+
 WAITING=`$SCRIPTS/link_waiting.sh "$ORGANIZER_DIR"`
 if [ -z "$WAITING" ]; then exit 1; fi
 

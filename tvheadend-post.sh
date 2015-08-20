@@ -12,6 +12,7 @@ ORGANIZER_DIR="$HOME/recording_organizer/output"
 # requires:
 EXPR="expr"
 DATECONVERT="date -d"
+LSOF="lsof"
 SRC=`dirname $0`
 SCRIPTS=$SRC/utils
 
@@ -40,13 +41,27 @@ for RECORDING in `$SCRIPTS/files_created.sh $RECORDING_DIR`; do
 
 	# convert EPOCH to yyyy-mm-dd weekday
 	DATE=`$DATECONVERT @$EPOCH +%Y-%m-%d\ %A`
-	echo $DATE
 
-	mkdir -p "$ORGANIZER_DIR/$DATE"
+	DATE_DIR="$ORGANIZER_DIR/$DATE"
+
+	[ ! -d "$DATE_DIR" ] && mkdir -p "$DATE_DIR"
+
+	PLACED_PATH="$DATE_DIR/$RECORDING"
 
 	# use hardlink so two copies of the file exists
-	ln $RECORDING "$ORGANIZER_DIR/$DATE/$RECORDING"
-	ln -s "$ORGANIZER_DIR/$DATE/$RECORDING" "$ORGANIZER_DIR/$RECORDING"
+	[ ! -e "$PLACED_PATH" ] && ln "$RECORDING_DIR/$RECORDING" "$PLACED_PATH"
+
+	echo $RECORDING_DIR/$RECORDING placed into $PLACED_PATH
+
+	# if file is finished recording create a link
+	# use lsof to check if recording is finished
+	if [ ! -h "$PLACED_PATH" ] && [ -z "`$LSOF \"$PLACED_PATH\" 2> /dev/null`" ] 
+	then
+		# basically this tells the processor to process the file
+		# because the processor is over the network, need to use filesystem
+		# to pass messages
+		ln -s "$PLACED_PATH" "$ORGANIZER_DIR/$RECORDING"
+	fi
 
 done
 exit 0
