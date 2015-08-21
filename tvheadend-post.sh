@@ -17,23 +17,19 @@ LSOF="lsof"
 SRC=`dirname $0`
 SCRIPTS=$SRC/utils
 
-# organize any new recordings by date directory
+for VARIABLES in CUTOFF RECORDING_DIR ORGANIZER_DIR; do
+	[ -z ${!VARIABLES} ] && echo "need to define $VARIABLES in $SRC/tvheadend.sh" && exit 0
+done
+
+# organize any new/modified recordings by date directory
 for RECORDING in `$SCRIPTS/files_created.sh $RECORDING_DIR`; do
 
-	[ $? -eq 1 ] && echo "Need to define RECORDING_DIR" && exit 1;
-
-	basename $RECORDING | sed -n '/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-.*-[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]-.*.ts/'
-
-	[ $? -eq 1 ] && continue;
+	# continue if filename not in correct format
+	CHECK=`basename $RECORDING | sed -n '/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-.*-[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]-.*.ts/p'`
+	[ -z "$CHECK" ] && continue;
 
 	DATE=`basename $RECORDING | sed  's/^\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\)-.*-[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]-.*.ts/\1/'`
 	HOUR=`basename $RECORDING | sed  's/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-.*-\([0-9][0-9]\)[0-9][0-9]-[0-9][0-9][0-9][0-9]-.*.ts/\1/'`
-
-	# continue if filename not in correct format
-	if [ -z $HOUR ]; then
-		echo $RECORDING filename not in correct format
-		continue
-	fi 
 
 	# convert filename to epoch
 	EPOCH=`$DATECONVERT "$DATE $HOUR:00" +%s`
@@ -62,18 +58,20 @@ for RECORDING in `$SCRIPTS/files_created.sh $RECORDING_DIR`; do
 	[ ! -e "$PLACED_PATH" ] && [ -z $TEST ] && ln "$RECORDING_DIR/$RECORDING" "$PLACED_PATH"
 	echo $RECORDING_DIR/$RECORDING placed into $PLACED_PATH
 
-	FLAG="$ORGANIZER_DIR/$RECORDING"
-
 	# if file is finished recording create a link
-	# touch doesn't affect link, so link will always be creation time
+	# because the processor is over the network, need to use filesystem to pass messages
 	# use lsof to check if recording is finished
-	if [ ! -h "$FLAG" ] && [ -z "`$LSOF \"$PLACED_PATH\" 2> /dev/null`" ] 
+	if [ -z "`$LSOF \"$PLACED_PATH\" 2> /dev/null`" ] 
 	then
-		# basically this tells the processor to process the file
-		# because the processor is over the network, need to use filesystem
-		# to pass messages
-		[ -z $TEST ] && ln -s "$PLACED_PATH" "$FLAG"
-		echo soft linked "$FLAG" to "$PLACED_PATH"
+		# this tells the processor to process the file
+		# -f always replaces old symbolic with the new symbolic
+		# since the loop starts from newest to oldest recording, the oldest recording will have the newest symbolic link
+		# and we can use utils/file_created.sh again at the processor to process the oldest recording first
+		FLAG="$ORGANIZER_DIR/$RECORDING"
+
+		[ -z $TEST ] && ln -sf "$PLACED_PATH" "$FLAG"
+
+		echo flag "$PLACED_PATH" by creating symbolic link "$FLAG"
 	fi
 
 done
