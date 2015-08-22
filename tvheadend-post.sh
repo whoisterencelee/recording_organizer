@@ -8,7 +8,7 @@
 CUTOFF=02
 RECORDING_DIR="$HOME/recording_organizer/recordings"
 ORGANIZER_DIR="$HOME/recording_organizer/channel"
-TEST=1
+#TEST=1
 
 # requires:
 EXPR="expr"
@@ -18,7 +18,7 @@ SRC=`dirname $0`
 SCRIPTS=$SRC/utils
 
 for VARIABLES in CUTOFF RECORDING_DIR ORGANIZER_DIR; do
-	[ -z ${!VARIABLES} ] && echo "need to define $VARIABLES in $0" && exit 0
+	[ -z "${!VARIABLES}" ] && echo "need to define $VARIABLES in $0" && exit 0
 done
 
 # organize any new/modified recordings by date directory
