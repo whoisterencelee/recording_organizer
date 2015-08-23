@@ -34,8 +34,9 @@ if [ ! -z "$1" ] && [ $1 -gt $RECURSION_LIMIT ]; then echo "$0 too much recursio
 for WAITING  in `$LS $WAITING_DIR`; do
 	LINK="$WAITING_DIR/$WAITING" 
 	# checking if $LINK is already processing
-	if [ -z "`$LSOF \"$LINK\" 2> /dev/null`" ]; then
-		RECORDING=`$READLINK "$WAITING_DIR/$WAITING"`
+	BUSY=`$LSOF "$LINK" 2> /dev/null`
+	if [ -z "$BUSY" ]; then
+		RECORDING=`$READLINK "$LINK"`
 		break
 	fi
 done
@@ -43,12 +44,13 @@ done
 if [ -z "$RECORDING" ]; then echo "no more recording is waiting"; exit 1; fi
 
 if [ -z "$TEST" ]; then
-	$COMSKIP_CMD "$WAITING_DIR/$RECORDING" && rm "$LINK" &
+	# keep running script recursively, stop when either cores or waiting recordings are used up
+	# we don't know what wine will return
+	$COMSKIP_CMD "$WAITING_DIR/$RECORDING"; rm "$LINK" && $SRC/comskip-processor.sh `$EXPR $1 + 1` &
 else
-	echo "$COMSKIP_CMD \"$WAITING_DIR/$RECORDING\" && rm \"$LINK\" && $SRC/comskip.sh & $1 of $RECURSION_LIMIT tries"
+	echo "$COMSKIP_CMD \"$WAITING_DIR/$RECORDING\"; rm \"$LINK\" && $SRC/comskip.sh & $1 of $RECURSION_LIMIT tries"
 fi
 
-# keep running script recursively, stop when either cores or waiting recordings are used up
-# need a small wait for wine to initialize and run comskip
+# run another script in parallel, but need a small wait for this recording's wine to initialize and run comskip
 sleep 20s
 $SRC/comskip-processor.sh `$EXPR $1 + 1`

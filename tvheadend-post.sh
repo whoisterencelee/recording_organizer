@@ -62,8 +62,9 @@ for RECORDING in `$SCRIPTS/files_created.sh $RECORDING_DIR`; do
 	# use lsof to check if recording is finished, if recording is finished create a link
 	# need to know which directory the recording is in, because processor needs to place supplementary file in the same directory
 	# hardlink cannot do that, use symbolic link 
-	if [ -z "`$LSOF \"$PLACED_PATH\" 2> /dev/null`" ] 
-	then
+	BUSY=`$LSOF "$PLACED_PATH" 2> /dev/null`
+	if [ -z "$BUSY" ]; then 
+		
 		WAITING_DIR="$ORGANIZER_DIR/.waiting"
 		[ -z $TEST ] && mkdir -p "$WAITING_DIR"
 
