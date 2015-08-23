@@ -5,7 +5,7 @@
 
 # variables
 # which hour to consider a new date, format hh
-CUTOFF=02
+CUTOFF=09
 RECORDING_DIR="$HOME/recording_organizer/recordings"
 ORGANIZER_DIR="$HOME/recording_organizer/channel"
 #TEST=1
@@ -18,7 +18,7 @@ SRC=`dirname $0`
 SCRIPTS=$SRC/utils
 
 for VARIABLES in CUTOFF RECORDING_DIR ORGANIZER_DIR; do
-	[ -z "${!VARIABLES}" ] && echo "need to define $VARIABLES in $0" && exit 0
+	[ -z $( eval "echo \$$VARIABLES" ) ] && echo "need to define $VARIABLES in $0" && exit 0
 done
 
 # organize any new/modified recordings by date directory
@@ -74,9 +74,10 @@ for RECORDING in `$SCRIPTS/files_created.sh $RECORDING_DIR`; do
 		# the oldest *modified* recording will have the newest symbolic link
 		# so processing should start on oldest *modified* first
 		# previously stuck *not modified* recording will still be last in the processing
-		[ -z $TEST ] && ln -sf "$PLACED_PATH" "$FLAG"
+		# link needs to be in relative path, not PLACED_PATH
+		[ -z $TEST ] && ln -sf "../$DATE/$RECORDING" "$FLAG"
 
-		echo flag "$PLACED_PATH" by creating symbolic link "$FLAG"
+		echo flag "../$DATE/$RECORDING" by creating symbolic link "$FLAG"
 	fi
 
 done
