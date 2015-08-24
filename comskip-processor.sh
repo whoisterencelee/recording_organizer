@@ -25,10 +25,10 @@ done
 
 # check how many comskips are running and recursion stop condition
 RUNNING=`$PS_CMD | $GREP_COUNT "$PROGRAM"`
-if [ $RUNNING -gt $CORES ]; then echo "too many $COMSKIP_CMD running"; exit 1; fi
+[ $RUNNING -gt $CORES ] && echo "too many $COMSKIP_CMD running" && exit 1
 
 # prevent runaway script
-if [ ! -z "$1" ] && [ $1 -gt $RECURSION_LIMIT ]; then echo "$0 too much recursion, either too many files to process or first check if your COMSKIP_CMD actually runs"; exit 1; fi
+[ ! -z "$1" ] && [ $1 -gt $RECURSION_LIMIT ] && echo "$0 too much recursion, either too many files to process or first check if your COMSKIP_CMD actually runs" && exit 1
 
 # get the next recording to process
 for WAITING  in `$LS $WAITING_DIR`; do
@@ -44,13 +44,14 @@ done
 if [ -z "$RECORDING" ]; then echo "no more recording is waiting"; exit 1; fi
 
 if [ -z "$TEST" ]; then
-	# keep running script recursively, stop when either cores or waiting recordings are used up
-	# we don't know what wine will return
-	$COMSKIP_CMD "$WAITING_DIR/$RECORDING"; rm "$LINK" && $SRC/comskip-processor.sh `$EXPR $1 + 1` &
+	# keep running script recursively, stop when either cores or waiting recordings are used up or recursion limit reached
+	# wine always return fail cannot use &&, use command grouping and call a new subshell to allow below parallel script run
+	# don't remove link first, if machine goes down during comskip, we can restart only if we still have the link
+	( $COMSKIP_CMD "$WAITING_DIR/$RECORDING"; rm "$LINK"; $SRC/comskip-processor.sh `$EXPR $1 + 1` ) &
 else
-	echo "$COMSKIP_CMD \"$WAITING_DIR/$RECORDING\"; rm \"$LINK\" && $SRC/comskip.sh & $1 of $RECURSION_LIMIT tries"
+	echo "$COMSKIP_CMD \"$WAITING_DIR/$RECORDING\"; rm \"$LINK\"; $SRC/comskip.sh & $1 of $RECURSION_LIMIT tries"
 fi
 
-# run another script in parallel, but need a small wait for this recording's wine to initialize and run comskip
+# run another script in parallel, but need a small wait for this recording's wine to initialize and lsof will show file is busy
 sleep 20s
 $SRC/comskip-processor.sh `$EXPR $1 + 1`
