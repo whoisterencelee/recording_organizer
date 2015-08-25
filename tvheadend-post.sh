@@ -16,6 +16,14 @@ DATECONVERT="date -d"
 LSOF="lsof"
 SRC=`dirname $0`
 SCRIPTS=$SRC/utils
+# lsof needs to be able to read /proc/<pid of tvheadend process>/*
+# which could be owned by root if tvheadend is invoked by root
+# non-root running this script will fail at lsof and will always assume the recording is finished
+# Here are some ways to deal with this:
+# 1) run tvheadend as root, script as root, but recordings will be created as root
+# 2) run tvheadend as root, but record as non-root (use tvheadend -u non-root -g non-root-group), change LSOF="sudo lsof" and add lsof to sudoer list
+# 3) run tvheadend as non-root (/proc/<pid> owned by non-root), but need to make sure /dev/dvb?/... is accessible by non-root, need to modify udev/hotplug rules
+# 4) not use lsof, check when file is not modify anymore, e.g. save file size > wait > check file size change
 
 for VARIABLES in CUTOFF RECORDING_DIR ORGANIZER_DIR; do
 	[ -z $( eval "echo \$$VARIABLES" ) ] && echo "need to define $VARIABLES in $0" && exit 0
