@@ -4,7 +4,7 @@ PROGRAM="$HOME/comskip/wine/comskip.exe"
 COMSKIP_CMD="wine $PROGRAM"
 # use below for final test
 # COMSKIP_CMD="echo $PROGRAM"
-WAITING_DIR="$HOME/recording_organizer/channel/.waiting"
+WAITING_DIR="/mnt/tv/.waiting"
 CORES=2
 RECURSION_LIMIT=10
 #TEST=1
@@ -38,6 +38,8 @@ for WAITING  in `$LS $WAITING_DIR`; do
 	if [ $? -eq 0 ]; then
 		RECORDING=`$READLINK "$LINK"`
 		break
+	else
+		echo already processing $LINK
 	fi
 done
 
