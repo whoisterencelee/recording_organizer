@@ -12,7 +12,6 @@ RECURSION_LIMIT=10
 # require
 PS_CMD="ps -ef"
 GREP_COUNT="grep -c"
-LSOF="lsof"
 READLINK="readlink"
 LS="ls -tA"
 EXPR="expr"
@@ -32,10 +31,11 @@ RUNNING=`$PS_CMD | $GREP_COUNT "$PROGRAM"`
 
 # get the next recording to process
 for WAITING  in `$LS $WAITING_DIR`; do
+
 	LINK="$WAITING_DIR/$WAITING" 
 	# checking if $LINK is already processing
-	BUSY=`$LSOF "$LINK" 2> /dev/null`
-	if [ -z "$BUSY" ]; then
+	BUSY=`$SCRIPTS/file_busy.sh "$PROGRAM" "$LINK"`
+	if [ $? -eq 0 ]; then
 		RECORDING=`$READLINK "$LINK"`
 		break
 	fi

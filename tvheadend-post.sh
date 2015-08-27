@@ -11,21 +11,20 @@ ORGANIZER_DIR="$HOME/recording_organizer/channel"
 #TEST=1
 
 # requires:
+SED="sed"
 EXPR="expr"
 DATECONVERT="date -d"
-LSOF="lsof"
 SRC=`dirname $0`
 SCRIPTS=$SRC/utils
-# lsof needs to be able to read /proc/<pid of tvheadend process>/*
-# which could be owned by root if tvheadend is invoked by root
-# non-root running this script will fail at lsof and will always assume the recording is finished
+# utils/file_busy.sh needs to be able to read /proc/<pid_of_tvheadend_process>/fd
+# which could be owned by root if tvheadend is invoked by root, 
+# non-root running this script will not be able to tell if recording is not yet complete and will always assume the recording is finished
 # Here are some ways to deal with this:
 # 1) run tvheadend as root, script as root, but recordings will be created as root
-# 2) run tvheadend as root, but record as non-root (use tvheadend -u non-root -g non-root-group), change LSOF="sudo lsof" and add lsof to sudoer list
-# 3) run tvheadend as non-root (/proc/<pid> owned by non-root), but need to make sure /dev/dvb?/... is accessible by non-root, need to modify udev/hotplug rules
-# 4) not use lsof, check when file is not modify anymore, e.g. save file size > wait > check file size change
+# 2) run tvheadend as non-root (/proc/<pid> then would be owned by non-root), but need to make sure /dev/dvb?/... is accessible by non-root, need to modify udev/hotplug rules
+# 3) replace utils/file_busy.sh with something that check when file is not modify anymore, e.g. save file size > wait > check file size change
 
-for VARIABLES in CUTOFF RECORDING_DIR ORGANIZER_DIR; do
+for VARIABLES in CUTOFF RECORDING_DIR ORGANIZER_DIR SED EXPR DATECONVERT SRC SCRIPTS; do
 	[ -z $( eval "echo \$$VARIABLES" ) ] && echo "need to define $VARIABLES in $0" && exit 0
 done
 
@@ -33,11 +32,11 @@ done
 for RECORDING in `$SCRIPTS/files_created.sh $RECORDING_DIR`; do
 
 	# continue if filename not in correct format
-	CHECK=`basename $RECORDING | sed -n '/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-.*-[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]-.*.ts/p'`
+	CHECK=`basename $RECORDING | $SED -n '/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-.*-[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]-.*.ts/p'`
 	[ -z "$CHECK" ] && continue;
 
-	DATE=`basename $RECORDING | sed  's/^\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\)-.*-[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]-.*.ts/\1/'`
-	HOUR=`basename $RECORDING | sed  's/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-.*-\([0-9][0-9]\)[0-9][0-9]-[0-9][0-9][0-9][0-9]-.*.ts/\1/'`
+	DATE=`basename $RECORDING | $SED  's/^\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\)-.*-[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]-.*.ts/\1/'`
+	HOUR=`basename $RECORDING | $SED  's/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-.*-\([0-9][0-9]\)[0-9][0-9]-[0-9][0-9][0-9][0-9]-.*.ts/\1/'`
 
 	# convert filename to epoch
 	EPOCH=`$DATECONVERT "$DATE $HOUR:00" +%s`
@@ -70,8 +69,8 @@ for RECORDING in `$SCRIPTS/files_created.sh $RECORDING_DIR`; do
 	# use lsof to check if recording is finished, if recording is finished create a link
 	# need to know which directory the recording is in, because processor needs to place supplementary file in the same directory
 	# hardlink cannot do that, use symbolic link 
-	BUSY=`$LSOF "$PLACED_PATH" 2> /dev/null`
-	if [ -z "$BUSY" ]; then 
+	BUSY=`$SCRIPTS/file_busy.sh tvheadend "$RECORDING_DIR/$RECORDING"`
+	if [ $? -eq 0 ]; then 
 		
 		WAITING_DIR="$ORGANIZER_DIR/.waiting"
 		[ -z $TEST ] && mkdir -p "$WAITING_DIR"
@@ -87,7 +86,8 @@ for RECORDING in `$SCRIPTS/files_created.sh $RECORDING_DIR`; do
 		[ -z $TEST ] && ln -sf "../$DATE/$RECORDING" "$FLAG"
 
 		echo flag "../$DATE/$RECORDING" by creating symbolic link "$FLAG"
+	else
+		echo $RECORDING is still busy
 	fi
 
 done
-exit 0
