@@ -1,0 +1,23 @@
+# Put your custom commands here that should be executed once
+# the system init finished. By default this file does nothing.
+
+#ntfs-3g /dev/sda1 /mnt/sda1
+
+insmod /lib/modules/dvb-modules/rc-core.ko
+insmod /lib/modules/dvb-modules/dvb-core.ko
+insmod /lib/modules/dvb-modules/dvb-usb.ko
+insmod /lib/modules/dvb-modules/atbm8830.ko
+insmod /lib/modules/dvb-modules/max2165.ko
+insmod /lib/modules/dvb-modules/dibx000_common.ko
+insmod /lib/modules/dvb-modules/dib0070.ko
+insmod /lib/modules/dvb-modules/dib7000p.ko
+insmod /lib/modules/dvb-modules/dvb-usb-cxusb.ko
+
+sleep 60
+/etc/init.d/sysntpd start
+
+export LD_LIBRARY_PATH=/lib:/usr/lib:/opt/lib:/opt/usr/lib
+#/opt/usr/bin/tvheadend -c /mnt/sda1/openwrt/tvheadend -u tvheadend -g tvheadend --fork
+start-stop-daemon -S -c tvheadend:tvheadend -x /opt/usr/bin/tvheadend -- -c /mnt/sda1/openwrt/tvheadend
+
+exit 0

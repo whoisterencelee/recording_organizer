@@ -24,7 +24,7 @@ SCRIPTS=$SRC/utils
 # 2) run tvheadend as non-root (/proc/<pid> then would be owned by non-root), but need to make sure /dev/dvb?/... is accessible by non-root, need to modify udev/hotplug rules
 # 3) replace utils/file_busy.sh with something that check when file is not modify anymore, e.g. save file size > wait > check file size change
 
-for VARIABLES in CUTOFF RECORDING_DIR ORGANIZER_DIR SED EXPR DATECONVERT SRC SCRIPTS; do
+for VARIABLES in CUTOFF RECORDING_DIR ORGANIZER_DIR; do
 	[ -z $( eval "echo \$$VARIABLES" ) ] && echo "need to define $VARIABLES in $0" && exit 0
 done
 

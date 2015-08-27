@@ -34,7 +34,7 @@ for WAITING  in `$LS $WAITING_DIR`; do
 
 	LINK="$WAITING_DIR/$WAITING" 
 	# checking if $LINK is already processing
-	BUSY=`$SCRIPTS/file_busy.sh "$PROGRAM" "$LINK"`
+	BUSY=`$SCRIPT/file_busy.sh "$PROGRAM" "$LINK"`
 	if [ $? -eq 0 ]; then
 		RECORDING=`$READLINK "$LINK"`
 		break
