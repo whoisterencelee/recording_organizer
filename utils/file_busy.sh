@@ -13,7 +13,7 @@ $PS -ef &> /dev/null
 
 FILE=`$READLINK "$2"`
 
-PIDS=`$PS | $GREP $1 | $SED 's/\([0-9]\+\).*/\1/'`
+PIDS=`$PS | $GREP "$1" | $SED 's/\([0-9]\+\).*/\1/'`
 for PID in $PIDS; do
 
 	FOUND=`$LS /proc/$PID/fd 2> /dev/null | $GREP "$FILE"`
